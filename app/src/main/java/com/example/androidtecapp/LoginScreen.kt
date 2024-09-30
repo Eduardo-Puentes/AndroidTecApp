@@ -1,4 +1,4 @@
-package com.example.androidgreenmatescolab
+package com.example.androidtecapp
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -47,7 +47,7 @@ fun GradientButton(
 }
 
 @Composable
-fun LoginScreen(onNavigateToRegister: () -> Unit) {
+fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: () -> Unit) {
     val gradient = Brush.linearGradient(
         colors = listOf(Color(0xFFFFEA05), Color(0xFF5AC86e)) // Example gradient from light green to dark green
     )
@@ -143,7 +143,7 @@ fun LoginScreen(onNavigateToRegister: () -> Unit) {
 
             GradientButton(
                 text = "Iniciar Sesión",
-                onClick = { /* Handle login */ },
+                onClick = { onLoginSuccess() },
                 gradient = gradient
             )
 

@@ -10,7 +10,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import com.example.androidgreenmatescolab.LoginScreen
+import com.example.androidtecapp.HomeScreen
+import com.example.androidtecapp.LoginScreen
 import com.example.androidtecapp.ui.theme.AndroidTecAppTheme
 
 class MainActivity : ComponentActivity() {
@@ -27,13 +28,24 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainScreenContent() {
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+        // Track whether the user is logged in
+        var isLoggedIn by remember { mutableStateOf(false) }
         var showLogin by remember { mutableStateOf(true) }
 
         Column(modifier = Modifier.padding(innerPadding)) {
-            if (showLogin) {
-                LoginScreen(onNavigateToRegister = { showLogin = false })
+            if (isLoggedIn) {
+                // Render the MapScreen when the user is logged in
+                HomeScreen()
             } else {
-                RegisterScreen(onNavigateToLogin = { showLogin = true })
+                // Toggle between login and registration screen
+                if (showLogin) {
+                    LoginScreen(
+                        onLoginSuccess = { isLoggedIn = true }, // User logs in successfully
+                        onNavigateToRegister = { showLogin = false }
+                    )
+                } else {
+                    RegisterScreen(onNavigateToLogin = { showLogin = true })
+                }
             }
         }
     }
@@ -46,3 +58,4 @@ fun MainScreenPreview() {
         MainScreenContent()
     }
 }
+
