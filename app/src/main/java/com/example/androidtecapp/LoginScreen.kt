@@ -2,12 +2,11 @@ package com.example.androidtecapp
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -18,7 +17,6 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
-import com.example.androidtecapp.R
 import com.example.androidtecapp.ui.theme.AndroidTecAppTheme
 
 @Composable
@@ -47,66 +45,31 @@ fun GradientButton(
 }
 
 @Composable
-fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: () -> Unit) {
+fun LoginScreen(onLoginSuccess: (String, String) -> Unit, onNavigateToRegister: () -> Unit) {
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf<String?>(null) } // For displaying error messages
+
     val gradient = Brush.linearGradient(
-        colors = listOf(Color(0xFFFFEA05), Color(0xFF5AC86e)) // Example gradient from light green to dark green
+        colors = listOf(Color(0xFFFFEA05), Color(0xFF5AC86e)) // Example gradient
     )
+
     val noGradient = Brush.linearGradient(
-        colors = listOf(Color(0xFF5AC86E), Color(0xFF5AC86E)) // Example gradient from light green to dark green
+        colors = listOf(Color(0xFF5AC86E), Color(0xFF5AC86E)) // Solid green for register button
     )
+
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        // Background images
-        Image(
-            painter = painterResource(id = R.drawable.top_background_image), // Replace with your image resource
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.TopCenter)
-                .height(200.dp) // Adjust the height as needed
-        )
+        // Background images...
+        // Logo and Title...
 
-        Image(
-            painter = painterResource(id = R.drawable.bottom_background_image), // Replace with your image resource
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.BottomCenter)
-                .height(200.dp) // Adjust the height as needed
-        )
-
-        // Add Spacer to position the logo lower down on the screen
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Top,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Spacer(modifier = Modifier.height(70.dp)) // Increase the height to move the logo down
-
-            // Add logo image
-            Image(
-                painter = painterResource(id = R.drawable.greenmateslogo), // Replace with your logo image resource
-                contentDescription = "Logo",
-                modifier = Modifier.size(50.dp) // Adjust size as needed
-            )
-
-            // Add title below the logo
-            Text(
-                text = "GreenMates", // Your title
-                style = MaterialTheme.typography.titleLarge, // Use a title style
-                modifier = Modifier.padding(top = 0.dp) // Add padding to create space between logo and title
-            )
-        }
-
-        // Content
+        // Login Form
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp)
-                .align(Alignment.Center), // Center the content
+                .align(Alignment.Center),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -115,8 +78,8 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: () -> Unit) {
             Spacer(modifier = Modifier.height(20.dp))
 
             OutlinedTextField(
-                value = "", // Aquí deberías manejar el estado
-                onValueChange = { /* Manejar cambio */ },
+                value = email,
+                onValueChange = { email = it },
                 label = { Text("Usuario") },
                 modifier = Modifier.fillMaxWidth()
             )
@@ -124,8 +87,8 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: () -> Unit) {
             Spacer(modifier = Modifier.height(8.dp))
 
             OutlinedTextField(
-                value = "", // Aquí deberías manejar el estado
-                onValueChange = { /* Manejar cambio */ },
+                value = password,
+                onValueChange = { password = it },
                 label = { Text("Contraseña") },
                 modifier = Modifier.fillMaxWidth(),
                 visualTransformation = PasswordVisualTransformation()
@@ -135,7 +98,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: () -> Unit) {
 
             ClickableText(
                 text = AnnotatedString("¿Olvidaste tu contraseña?"),
-                onClick = { /* Manejar clic de olvidar contraseña */ },
+                onClick = { /* Handle forgot password */ },
                 modifier = Modifier.align(Alignment.End)
             )
 
@@ -143,9 +106,28 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: () -> Unit) {
 
             GradientButton(
                 text = "Iniciar Sesión",
-                onClick = { onLoginSuccess() },
+                onClick = {
+                    if (email.isEmpty() || password.isEmpty()) {
+                        errorMessage = "Please enter both email and password"
+                    } else {
+                        errorMessage = null // Clear error if inputs are valid
+                        onLoginSuccess(email, password)
+                    }
+                },
                 gradient = gradient
             )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Display error message if available
+            if (errorMessage != null) {
+                Text(
+                    text = errorMessage!!,
+                    color = Color.Red,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
 
             Spacer(modifier = Modifier.height(20.dp))
 
@@ -162,7 +144,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: () -> Unit) {
             Spacer(modifier = Modifier.height(20.dp))
 
             Button(
-                onClick = { /* Manejar clic para iniciar sesión con Google */ },
+                onClick = { /* Handle Google login */ },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Iniciar con Google")

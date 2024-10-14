@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "346147133287",
+    "project_id": "greenmates-afcd3",
+    "storage_bucket": "greenmates-afcd3.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:346147133287:android:63b979e5fdfea6ebcc01c2",
+        "android_client_info": {
+          "package_name": "com.example.androidtecapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDTpPohE4qA3Px--56C2sw3W1AImbryo58"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
