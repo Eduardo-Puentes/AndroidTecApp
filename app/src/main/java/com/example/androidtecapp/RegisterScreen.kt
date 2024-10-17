@@ -3,7 +3,7 @@ package com.example.androidtecapp
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -12,71 +12,42 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import com.example.androidtecapp.GradientButton
-import com.example.androidtecapp.R
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
+import com.example.androidtecapp.network.RetrofitClient
+import com.example.androidtecapp.models.User
+import com.example.androidtecapp.network.responses.UserResponse
+import com.google.firebase.auth.FirebaseAuth
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 @Composable
 fun RegisterScreen(onNavigateToLogin: () -> Unit) {
+    val context = LocalContext.current
+    val auth = FirebaseAuth.getInstance()  // Initialize FirebaseAuth instance
+
+    // Manage the state of each input field
+    var username by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+
     val gradient = Brush.linearGradient(
-        colors = listOf(Color(0xFFFFEA05), Color(0xFF5AC86E)) // Example gradient from light green to dark green
+        colors = listOf(Color(0xFFFFEA05), Color(0xFF5AC86E)) // Example gradient
     )
     val noGradient = Brush.linearGradient(
-        colors = listOf(Color(0xFF5AC86E), Color(0xFF5AC86E)) // Example gradient from light green to dark green
+        colors = listOf(Color(0xFF5AC86E), Color(0xFF5AC86E)) // Solid green for register button
     )
 
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        // Background images
-        Image(
-            painter = painterResource(id = R.drawable.top_background_image), // Replace with your image resource
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.TopCenter)
-                .height(200.dp) // Adjust the height as needed
-        )
-
-        Image(
-            painter = painterResource(id = R.drawable.bottom_background_image), // Replace with your image resource
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.BottomCenter)
-                .height(200.dp) // Adjust the height as needed
-        )
-
-        // Add Spacer to position the logo and title lower down on the screen
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Top,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Spacer(modifier = Modifier.height(70.dp)) // Adjust this height to move the logo down
-
-            // Add logo image
-            Image(
-                painter = painterResource(id = R.drawable.greenmateslogo), // Replace with your logo image resource
-                contentDescription = "Logo",
-                modifier = Modifier.size(50.dp) // Adjust size as needed
-            )
-
-            // Add title below the logo
-            Text(
-                text = "GreenMates", // Your title
-                style = MaterialTheme.typography.titleLarge, // Use a title style
-                modifier = Modifier.padding(top = 0.dp) // Add padding to create space between logo and title
-            )
-        }
-
         // Content
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp)
-                .align(Alignment.Center), // Center the content
+                .align(Alignment.Center),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -85,8 +56,8 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit) {
             Spacer(modifier = Modifier.height(20.dp))
 
             OutlinedTextField(
-                value = "", // Aquí deberías manejar el estado
-                onValueChange = { /* Manejar cambio */ },
+                value = username,
+                onValueChange = { username = it },
                 label = { Text("Usuario") },
                 modifier = Modifier.fillMaxWidth()
             )
@@ -94,17 +65,17 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit) {
             Spacer(modifier = Modifier.height(8.dp))
 
             OutlinedTextField(
-                value = "", // Aquí deberías manejar el estado
-                onValueChange = { /* Manejar cambio */ },
-                label = { Text("Número Telefónico") },
+                value = email,
+                onValueChange = { email = it },
+                label = { Text("Correo Electrónico") },
                 modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             OutlinedTextField(
-                value = "", // Aquí deberías manejar el estado
-                onValueChange = { /* Manejar cambio */ },
+                value = password,
+                onValueChange = { password = it },
                 label = { Text("Contraseña") },
                 modifier = Modifier.fillMaxWidth(),
                 visualTransformation = PasswordVisualTransformation()
@@ -114,7 +85,10 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit) {
 
             GradientButton(
                 text = "Crear Cuenta",
-                onClick = { /* Handle registration */ },
+                onClick = {
+                    // Call Firebase registration and pass the data to Go API upon success
+                    registerUserWithFirebase(auth, context, username, email, password, onNavigateToLogin)
+                },
                 gradient = gradient
             )
 
@@ -133,7 +107,7 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit) {
             Spacer(modifier = Modifier.height(20.dp))
 
             Button(
-                onClick = { /* Manejar clic para iniciar sesión con Google */ },
+                onClick = { /* Handle Google Sign-In if needed */ },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Iniciar con Google")
@@ -141,3 +115,56 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit) {
         }
     }
 }
+
+
+// Register user with Firebase and then in your Go API
+fun registerUserWithFirebase(
+    auth: FirebaseAuth,
+    context: android.content.Context,
+    username: String,
+    email: String,
+    password: String,
+    onNavigateToLogin: () -> Unit
+) {
+    // Register user with Firebase
+    auth.createUserWithEmailAndPassword(email, password)
+        .addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                // Get the Firebase UID after successful registration
+                val firebaseUser = auth.currentUser
+                firebaseUser?.let { user ->
+                    val uid = user.uid  // This is the Firebase-generated UID
+
+                    // Create a new user with the retrieved UID, name, and email
+                    val newUser = User(name = username, email = email)
+
+                    // Now send this user data to your Go API with UID in headers
+                    registerUserInDatabase(uid, newUser, context, onNavigateToLogin)
+                }
+            } else {
+                // Handle registration failure
+                Toast.makeText(context, "Firebase Registration Failed: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+}
+
+
+fun registerUserInDatabase(uid: String, user: User, context: android.content.Context, onNavigateToLogin: () -> Unit) {
+    // Use Retrofit to send the UID as a header and user info in the request body
+    RetrofitClient.instance.createUser(uid, user).enqueue(object : Callback<UserResponse> {
+        override fun onResponse(call: Call<UserResponse>, response: Response<UserResponse>) {
+            if (response.isSuccessful) {
+                Toast.makeText(context, "User registered successfully in the database", Toast.LENGTH_LONG).show()
+                onNavigateToLogin() // Redirect to login after successful registration
+            } else {
+                Toast.makeText(context, "Failed to register user in the database", Toast.LENGTH_LONG).show()
+            }
+        }
+
+        override fun onFailure(call: Call<UserResponse>, t: Throwable) {
+            Toast.makeText(context, "Network error: ${t.message}", Toast.LENGTH_LONG).show()
+        }
+    })
+}
+
+
