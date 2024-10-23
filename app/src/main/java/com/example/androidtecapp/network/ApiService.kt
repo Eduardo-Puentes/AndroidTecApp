@@ -8,10 +8,10 @@ import retrofit2.http.Header
 import retrofit2.http.POST
 
 interface ApiService {
-    // Send the Firebase UID via headers instead of in the body
-    @POST("/users")
+    @POST("/api/user")
     fun createUser(
-        @Header("Authorization") firebaseUid: String,  // Header to pass the UID
-        @Body user: User  // User data without the UID
+        @Header("Authorization") token: String,  // Firebase token in the header
+        @Body user: User                        // User data in the request body
     ): Call<UserResponse>
 }
+

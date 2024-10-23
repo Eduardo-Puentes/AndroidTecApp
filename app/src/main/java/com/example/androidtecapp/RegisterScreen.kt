@@ -1,5 +1,6 @@
 package com.example.androidtecapp
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -136,7 +137,7 @@ fun registerUserWithFirebase(
                     val uid = user.uid  // This is the Firebase-generated UID
 
                     // Create a new user with the retrieved UID, name, and email
-                    val newUser = User(name = username, email = email)
+                    val newUser = User(Username = username, Email = email)
 
                     // Now send this user data to your Go API with UID in headers
                     registerUserInDatabase(uid, newUser, context, onNavigateToLogin)
@@ -150,21 +151,41 @@ fun registerUserWithFirebase(
 
 
 fun registerUserInDatabase(uid: String, user: User, context: android.content.Context, onNavigateToLogin: () -> Unit) {
-    // Use Retrofit to send the UID as a header and user info in the request body
-    RetrofitClient.instance.createUser(uid, user).enqueue(object : Callback<UserResponse> {
-        override fun onResponse(call: Call<UserResponse>, response: Response<UserResponse>) {
-            if (response.isSuccessful) {
-                Toast.makeText(context, "User registered successfully in the database", Toast.LENGTH_LONG).show()
-                onNavigateToLogin() // Redirect to login after successful registration
-            } else {
-                Toast.makeText(context, "Failed to register user in the database", Toast.LENGTH_LONG).show()
-            }
-        }
+    // Get the Firebase ID token
+    FirebaseAuth.getInstance().currentUser?.getIdToken(true)?.addOnCompleteListener { task ->
+        if (task.isSuccessful) {
+            val firebaseToken = task.result?.token
 
-        override fun onFailure(call: Call<UserResponse>, t: Throwable) {
-            Toast.makeText(context, "Network error: ${t.message}", Toast.LENGTH_LONG).show()
+            if (firebaseToken != null) {
+                // Use Retrofit to send the UID as a header and user info in the request body
+                RetrofitClient.instance.createUser("Bearer $firebaseToken", user).enqueue(object : Callback<UserResponse> {
+                    override fun onResponse(call: Call<UserResponse>, response: Response<UserResponse>) {
+                        if (response.isSuccessful) {
+                            Toast.makeText(context, "User registered successfully in the database", Toast.LENGTH_LONG).show()
+                            onNavigateToLogin() // Redirect to login after successful registration
+                        } else {
+                            Toast.makeText(context, "Failed to register user in the database", Toast.LENGTH_LONG).show()
+                        }
+                    }
+
+                    override fun onFailure(call: Call<UserResponse>, t: Throwable) {
+                        // Log the full stack trace and add custom tags
+                        Log.e("MyApp", "Network error occurred", t) // Log with tag "MyApp"
+
+                        // Optionally, also print the stack trace in Logcat
+                        t.printStackTrace()
+
+                        Toast.makeText(context, "Network error: ${t.message}", Toast.LENGTH_LONG).show()
+                    }
+                })
+            } else {
+                Toast.makeText(context, "Unable to get Firebase token", Toast.LENGTH_LONG).show()
+            }
+        } else {
+            Toast.makeText(context, "Error retrieving Firebase token", Toast.LENGTH_LONG).show()
         }
-    })
+    }
 }
+
 
 
