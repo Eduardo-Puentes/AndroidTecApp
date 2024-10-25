@@ -19,6 +19,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.androidtecapp.ui.theme.AndroidTecAppTheme
 import com.google.firebase.auth.FirebaseAuth
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import com.example.androidtecapp.network.RetrofitClient
+import com.example.androidtecapp.models.User
+import com.example.androidtecapp.network.responses.UserResponse
 
 class MainActivity : ComponentActivity() {
     private lateinit var auth: FirebaseAuth
@@ -38,22 +44,24 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MainScreenContent(auth: FirebaseAuth) {
-    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-        var isLoggedIn by remember { mutableStateOf(false) }
-        var showLogin by remember { mutableStateOf(true) }
-        val context = LocalContext.current // Context needed for Toast
+    var isLoggedIn by remember { mutableStateOf(false) }
+    var userInfo by remember { mutableStateOf<User?>(null) } // Store user info here
+    var showLogin by remember { mutableStateOf(true) }
+    val context = LocalContext.current
 
+    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding)) {
-            if (isLoggedIn) {
-                // Handle the main screen content after login
-                MainAppWithBottomNav()
+            if (isLoggedIn && userInfo != null) {
+                // Pass the user info to other screens once the user is logged in
+                MainAppWithBottomNav(userInfo = userInfo!!)
             } else {
                 if (showLogin) {
                     LoginScreen(
                         onLoginSuccess = { email, password ->
-                            signInWithFirebase(email, password, auth) { success ->
-                                if (success) {
+                            signInWithFirebase(email, password, auth) { success, fetchedUserInfo ->
+                                if (success && fetchedUserInfo != null) {
                                     isLoggedIn = true
+                                    userInfo = fetchedUserInfo // Store fetched user info
                                 } else {
                                     Toast.makeText(context, "Login failed. Please check your credentials.", Toast.LENGTH_LONG).show()
                                 }
@@ -70,7 +78,7 @@ fun MainScreenContent(auth: FirebaseAuth) {
 }
 
 @Composable
-fun MainAppWithBottomNav() {
+fun MainAppWithBottomNav(userInfo: User) {
     var selectedScreen by remember { mutableStateOf<Screen>(Screen.Home) }
 
     Scaffold(
@@ -84,15 +92,13 @@ fun MainAppWithBottomNav() {
         Box(modifier = Modifier.padding(innerPadding)) {
             when (selectedScreen) {
                 Screen.Home -> HomeScreen()
-                Screen.UserProfile -> UserProfileScreen()
-                // Add more screens here as necessary
-                //Screen.Groups -> TODO()
+                Screen.UserProfile -> UserProfileScreen(userInfo = userInfo) // Pass user info here
                 Screen.Ranking -> RankingScreen()
-                //Screen.Search -> TODO()
             }
         }
     }
 }
+
 
 @Composable
 fun BottomNavigationBar(selectedScreen: Screen, onScreenSelected: (Screen) -> Unit) {
@@ -160,21 +166,47 @@ fun signInWithFirebase(
     email: String,
     password: String,
     auth: FirebaseAuth,
-    onResult: (Boolean) -> Unit
+    onResult: (Boolean, User?) -> Unit // Update this to pass user info
 ) {
     auth.signInWithEmailAndPassword(email, password)
         .addOnCompleteListener { task ->
             if (task.isSuccessful) {
-                val user = auth.currentUser
-                Log.d("FirebaseAuth", "User signed in successfully: ${user?.uid}")
-                Log.d("FirebaseAuth", "User email: ${user?.email}")
-                Log.d("FirebaseAuth", "User display name: ${user?.displayName}")
-                onResult(true)
+                val firebaseUser = auth.currentUser
+                firebaseUser?.let { user ->
+                    val uid = user.uid
+
+                    // Fetch user data from your external database using the Firebase UID
+                    fetchUserData(uid) { userInfo ->
+                        if (userInfo != null) {
+                            onResult(true, userInfo) // Pass the user info to the callback
+                        } else {
+                            onResult(false, null)
+                        }
+                    }
+                }
             } else {
-                Log.e("FirebaseAuth", "Sign-in failed: ${task.exception?.localizedMessage}")
-                onResult(false)
+                onResult(false, null)
             }
         }
+}
+
+// Fetch user data from your API using the Firebase UID
+fun fetchUserData(uid: String, onResult: (User?) -> Unit) {
+    // Make a network request to fetch the user data from your external database
+    RetrofitClient.instance.getUser(uid).enqueue(object : Callback<UserResponse> {
+        override fun onResponse(call: Call<UserResponse>, response: Response<UserResponse>) {
+            if (response.isSuccessful) {
+                val user = response.body()?.user // Assuming your API returns a User object
+                onResult(user)
+            } else {
+                onResult(null)
+            }
+        }
+
+        override fun onFailure(call: Call<UserResponse>, t: Throwable) {
+            onResult(null)
+        }
+    })
 }
 
 @Preview(showBackground = true)

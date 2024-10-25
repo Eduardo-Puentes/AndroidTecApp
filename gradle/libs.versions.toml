@@ -34,7 +34,9 @@ androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
 retrofit-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "gson" }
-google-services-auth = { module = "com.google.android.gms:play-services-auth", version = "20.4.1" }
+google-services-auth = { module = "com.google.android.gms:play-services-auth", version = "21.2.0" }
+zxing = { group = "com.google.zxing", name = "core", version = "3.4.1" }
+
 
 
 [plugins]
