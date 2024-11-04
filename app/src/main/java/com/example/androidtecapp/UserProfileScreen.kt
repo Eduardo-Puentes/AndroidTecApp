@@ -46,7 +46,8 @@ fun UserProfileScreen(userInfo: User) {
             // Medals Section
             MedalsSection()
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.
+            height(16.dp))
 
             // Achievement List
             AchievementsList()
@@ -186,7 +187,7 @@ fun AchievementItem(description: String, medalType: MedalType) {
 fun UserProfileScreenPreview() {
     // Create a sample user data for preview
     val sampleUser = User(
-        Username = "Luis Isaia",
+        Username = "Luis Isai",
         Email = "example@gmail.com"
         // Add other fields if needed
     )

@@ -63,6 +63,7 @@ fun MainScreenContent(auth: FirebaseAuth) {
                                     isLoggedIn = true
                                     userInfo = fetchedUserInfo // Store fetched user info
                                 } else {
+                                    Log.e("Res","$fetchedUserInfo");
                                     Toast.makeText(context, "Login failed. Please check your credentials.", Toast.LENGTH_LONG).show()
                                 }
                             }
@@ -166,44 +167,57 @@ fun signInWithFirebase(
     email: String,
     password: String,
     auth: FirebaseAuth,
-    onResult: (Boolean, User?) -> Unit // Update this to pass user info
+    onResult: (Boolean, User?) -> Unit
 ) {
+    Log.d("SignIn", "Attempting to sign in with email: $email and password: $password")
+
     auth.signInWithEmailAndPassword(email, password)
         .addOnCompleteListener { task ->
             if (task.isSuccessful) {
+                Log.d("SignIn", "Firebase sign-in successful")
+
                 val firebaseUser = auth.currentUser
                 firebaseUser?.let { user ->
-                    val uid = user.uid
+                    val email = user.email ?: ""
+                    val username = user.displayName ?: ""
 
-                    // Fetch user data from your external database using the Firebase UID
-                    fetchUserData(uid) { userInfo ->
-                        if (userInfo != null) {
-                            onResult(true, userInfo) // Pass the user info to the callback
-                        } else {
-                            onResult(false, null)
-                        }
-                    }
+                    // Creating a User object based on Firebase information
+                    val userInfo = User(Username = username, Email = email)
+
+                    Log.d("SignIn", "Firebase User Email: $email, Username: $username")
+
+                    // Returning the Firebase user info directly
+                    onResult(true, userInfo)
                 }
             } else {
+                Log.e("SignIn", "Firebase sign-in failed: ${task.exception?.message}")
                 onResult(false, null)
             }
         }
 }
 
+
+
+
+
 // Fetch user data from your API using the Firebase UID
 fun fetchUserData(uid: String, onResult: (User?) -> Unit) {
-    // Make a network request to fetch the user data from your external database
+    Log.d("FetchUserData", "Fetching user data for UID: $uid")
+
+    // Call the external API to get the user data
     RetrofitClient.instance.getUser(uid).enqueue(object : Callback<UserResponse> {
         override fun onResponse(call: Call<UserResponse>, response: Response<UserResponse>) {
             if (response.isSuccessful) {
-                val user = response.body()?.user // Assuming your API returns a User object
-                onResult(user)
+                Log.d("FetchUserData", "Successfully retrieved user data")
+                onResult(response.body()?.user) // Pass the User object to the callback
             } else {
+                Log.e("FetchUserData", "Failed to retrieve user data, response code: ${response.code()}")
                 onResult(null)
             }
         }
 
         override fun onFailure(call: Call<UserResponse>, t: Throwable) {
+            Log.e("FetchUserData", "Network error while fetching user data: ${t.message}")
             onResult(null)
         }
     })
