@@ -137,10 +137,10 @@ fun registerUserWithFirebase(
                     val uid = user.uid  // This is the Firebase-generated UID
 
                     // Create a new user with the retrieved UID, name, and email
-                    val newUser = User(Username = username, Email = email)
+                    val newUser = User(FBID = uid, Username = username, Email = email)
 
                     // Now send this user data to your Go API with UID in headers
-                    registerUserInDatabase(uid, newUser, context, onNavigateToLogin)
+                    registerUserInDatabase(newUser, context, onNavigateToLogin)
                 }
             } else {
                 // Handle registration failure
@@ -150,7 +150,7 @@ fun registerUserWithFirebase(
 }
 
 
-fun registerUserInDatabase(uid: String, user: User, context: android.content.Context, onNavigateToLogin: () -> Unit) {
+fun registerUserInDatabase(user: User, context: android.content.Context, onNavigateToLogin: () -> Unit) {
     // Get the Firebase ID token
     FirebaseAuth.getInstance().currentUser?.getIdToken(true)?.addOnCompleteListener { task ->
         if (task.isSuccessful) {
@@ -158,7 +158,7 @@ fun registerUserInDatabase(uid: String, user: User, context: android.content.Con
 
             if (firebaseToken != null) {
                 // Use Retrofit to send the UID as a header and user info in the request body
-                RetrofitClient.instance.createUser("Bearer $firebaseToken", user).enqueue(object : Callback<UserResponse> {
+                RetrofitClient.instance.createUser(user).enqueue(object : Callback<UserResponse> {
                     override fun onResponse(call: Call<UserResponse>, response: Response<UserResponse>) {
                         if (response.isSuccessful) {
                             Toast.makeText(context, "User registered successfully in the database", Toast.LENGTH_LONG).show()

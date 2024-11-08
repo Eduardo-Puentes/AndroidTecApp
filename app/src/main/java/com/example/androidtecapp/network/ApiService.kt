@@ -10,12 +10,11 @@ import retrofit2.http.POST
 import retrofit2.http.Path
 
 interface ApiService {
-    @GET("/users/{uid}")
+    @GET("/api/user/{uid}")
     fun getUser(@Path("uid") uid: String): Call<UserResponse>
 
     @POST("/api/user")
     fun createUser(
-        @Header("Authorization") token: String,  // Firebase token in the header
         @Body user: User                        // User data in the request body
     ): Call<UserResponse>
 }

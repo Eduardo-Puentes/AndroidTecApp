@@ -4,7 +4,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitClient {
-    private const val BASE_URL = "http://10.50.84.212:3000"  // Replace with your Go API URL
+    private const val BASE_URL = "http://10.50.90.159:3000"  // Replace with your Go API URL
 
     // Lazy initialization of Retrofit
     val instance: ApiService by lazy {

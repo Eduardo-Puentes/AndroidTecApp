@@ -178,16 +178,19 @@ fun signInWithFirebase(
 
                 val firebaseUser = auth.currentUser
                 firebaseUser?.let { user ->
-                    val email = user.email ?: ""
-                    val username = user.displayName ?: ""
+                    val uid = user.uid // Get Firebase UID
+                    Log.d("SignIn", "Firebase UID: $uid")
 
-                    // Creating a User object based on Firebase information
-                    val userInfo = User(Username = username, Email = email)
-
-                    Log.d("SignIn", "Firebase User Email: $email, Username: $username")
-
-                    // Returning the Firebase user info directly
-                    onResult(true, userInfo)
+                    // Fetch additional user data from your external database using the Firebase UID
+                    fetchUserData(uid) { userInfo ->
+                        if (userInfo != null) {
+                            Log.d("SignIn", "Successfully fetched user data from database")
+                            onResult(true, userInfo)
+                        } else {
+                            Log.e("SignIn", "Failed to fetch user data from database")
+                            onResult(false, null)
+                        }
+                    }
                 }
             } else {
                 Log.e("SignIn", "Firebase sign-in failed: ${task.exception?.message}")
@@ -196,20 +199,21 @@ fun signInWithFirebase(
         }
 }
 
-
-
-
-
 // Fetch user data from your API using the Firebase UID
 fun fetchUserData(uid: String, onResult: (User?) -> Unit) {
     Log.d("FetchUserData", "Fetching user data for UID: $uid")
 
-    // Call the external API to get the user data
     RetrofitClient.instance.getUser(uid).enqueue(object : Callback<UserResponse> {
         override fun onResponse(call: Call<UserResponse>, response: Response<UserResponse>) {
             if (response.isSuccessful) {
-                Log.d("FetchUserData", "Successfully retrieved user data")
-                onResult(response.body()?.user) // Pass the User object to the callback
+                val userResponse = response.body()
+                if (userResponse?.user != null) {
+                    Log.d("FetchUserData", "Successfully retrieved user data: ${userResponse.user}")
+                    onResult(userResponse.user) // Pass the User object to the callback
+                } else {
+                    Log.e("FetchUserData", "User data is null in the response")
+                    onResult(null)
+                }
             } else {
                 Log.e("FetchUserData", "Failed to retrieve user data, response code: ${response.code()}")
                 onResult(null)

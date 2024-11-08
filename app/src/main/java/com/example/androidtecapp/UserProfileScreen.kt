@@ -44,7 +44,7 @@ fun UserProfileScreen(userInfo: User) {
             Spacer(modifier = Modifier.height(16.dp))
 
             // Medals Section
-            MedalsSection()
+            MedalsSection(mt = userInfo.MedalTrans, me = userInfo.MedalEnergy, mc = userInfo.MedalConsume, md = userInfo.MedalDesecho)
 
             Spacer(modifier = Modifier.
             height(16.dp))
@@ -59,7 +59,7 @@ fun UserProfileScreen(userInfo: User) {
 fun UserInfoSection(userInfo: User) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         // Generate and display the QR Code
-        val qrCodeText = "FscKKoLCvzSxhVYn1G3ygv0uK9L2"
+        val qrCodeText = userInfo.FBID
         val qrCodeBitmap = remember { generateQRCode(qrCodeText, 450) }
 
         Box(
@@ -89,23 +89,21 @@ fun UserInfoSection(userInfo: User) {
             )
         }
 
-        // User Name
         Text(text = userInfo.Username, fontSize = 20.sp, modifier = Modifier.padding(top = 8.dp))
-        Text(text = "Montes Rico", fontSize = 16.sp, color = Color.Gray)
     }
 }
 
 
 @Composable
-fun MedalsSection() {
+fun MedalsSection(mt: Int, me: Int, mc: Int, md: Int) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-        MedalItem(medalType = MedalType.GOLD, count = 38)
-        MedalItem(medalType = MedalType.SILVER, count = 28)
-        MedalItem(medalType = MedalType.GOLD, count = 42)
-        MedalItem(medalType = MedalType.BRONZE, count = 4)
+        MedalItem(medalType = MedalType.GOLD, count = mt)
+        MedalItem(medalType = MedalType.SILVER, count = me)
+        MedalItem(medalType = MedalType.GOLD, count = mc)
+        MedalItem(medalType = MedalType.BRONZE, count = md)
     }
 }
 
@@ -188,8 +186,8 @@ fun UserProfileScreenPreview() {
     // Create a sample user data for preview
     val sampleUser = User(
         Username = "Luis Isai",
-        Email = "example@gmail.com"
-        // Add other fields if needed
+        Email = "example@gmail.com",
+        FBID = "sfsefse"
     )
 
     AndroidTecAppTheme {
