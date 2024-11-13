@@ -61,8 +61,15 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
+import android.util.Log
 import androidx.compose.ui.graphics.Color as ComposeColor
 import androidx.compose.ui.graphics.toArgb
+import com.example.androidtecapp.models.getTaller
+import com.example.androidtecapp.network.RetrofitClient
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import java.util.Date
 
 @Composable
 fun HomeScreen() {
@@ -160,93 +167,113 @@ fun CollectionList() {
             .fillMaxWidth()
             .padding(16.dp)
     ) {
-        CollectionItem(
-            title = "Recolecta en curso",
-            address = "Av. Eugenio Garza Sada 2501 Sur, Tecnológico, 64849 Monterrey, N.L.",
-            percentage = 100,
-            isOngoing = true
-        )
-        CollectionItem(
-            title = "Taller Programado",
-            address = "Atlixcáyotl 5718, Reserva Territorial Atlixcáyotl, 72453 Puebla, Pue.",
-            percentage = 50,
-            isOngoing = false
-        )
+        CoursesScreen()
         // Add more items as needed
     }
 }
 
 @Composable
-fun CollectionItem(title: String, address: String, percentage: Int, isOngoing: Boolean) {
-    // State to track whether the item is expanded
-    var isExpanded by remember { mutableStateOf(false) }
+fun CoursesScreen() {
+    var talleres by remember { mutableStateOf<List<getTaller>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    val apiService = RetrofitClient.instance
 
-    // Main item container
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(Color.White)
-            .clickable { isExpanded = !isExpanded } // Toggle expansion state on click
-            .padding(16.dp)
-    ) {
-        // Row with title, address, and progress
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = title, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                Text(text = address, fontSize = 14.sp, color = Color.Gray)
+    LaunchedEffect(Unit) {
+        // Fetch the talleres when the composable is launched
+        apiService.getAllCourses().enqueue(object : Callback<List<getTaller>> {
+            override fun onResponse(call: Call<List<getTaller>>, response: Response<List<getTaller>>) {
+                if (response.isSuccessful) {
+                    talleres = response.body() ?: emptyList()
+                } else {
+                    Log.e("CoursesScreen", "Failed to fetch courses: ${response.errorBody()?.string()}")
+                }
+                isLoading = false
             }
 
-            // Circular Progress with Percentage
-            Box(
-                modifier = Modifier
-                    .size(50.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(
-                    progress = percentage / 100f,
-                    color = if (isOngoing) Color.Green else Color.Red,
-                    strokeWidth = 6.dp
-                )
-                Text(text = "$percentage%", fontSize = 12.sp)
+            override fun onFailure(call: Call<List<getTaller>>, t: Throwable) {
+                Log.e("CoursesScreen", "Network error: ${t.message}")
+                isLoading = false
             }
-        }
+        })
+    }
 
-        // Expanded content: only shown when isExpanded is true
-        if (isExpanded) {
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Add more details
+    // Display loading indicator or list of courses
+    if (isLoading) {
+        CircularProgressIndicator()
+    } else {
+        Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque odio justo, semper rutrum purus et, facilisis viverra lorem.",
-                fontSize = 14.sp,
-                modifier = Modifier.padding(vertical = 8.dp)
+                text = "Active Courses",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold
             )
 
-            // Materials received section
-            Text(text = "Recibimos", fontWeight = FontWeight.Bold)
-            Text(text = "  • Cartón\n  • Tetrapack\n  • Cajas\n  • Placas de Cartón", fontSize = 14.sp)
+            Spacer(modifier = Modifier.height(16.dp))
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Button to attend the event
-            Button(
-                onClick = { /* Handle attend click */ },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp)
-                    .clip(RoundedCornerShape(8.dp)),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00C853))
-            ) {
-                Text(text = "Asistir", color = Color.White)
+            // Render each `getTaller` in the list
+            talleres.forEach { taller ->
+                CollectionItem(
+                    title = taller.title,
+                    address = "${taller.longitude}, ${taller.latitude}", // Display coordinates as address
+                    percentage = calculateCompletionPercentage(taller), // Customize as needed
+                    isOngoing = isCourseOngoing(taller.startTime, taller.endTime)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
+}
+
+@Composable
+fun CollectionItem(title: String, address: String, percentage: Int, isOngoing: Boolean) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFDADADA))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                Text(text = title, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(text = address)
+            }
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.size(48.dp)
+            ) {
+                CircularProgressIndicator(
+                    progress = percentage / 100f,
+                    color = if (isOngoing) Color.Green else Color.Gray,
+                    strokeWidth = 6.dp
+                )
+                Text(
+                    text = "$percentage%",
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isOngoing) Color.Green else Color.Gray
+                )
+            }
+        }
+    }
+}
+
+// Helper functions
+fun calculateCompletionPercentage(taller: getTaller): Int {
+    // Replace with actual calculation logic
+    return 50
+}
+
+fun isCourseOngoing(startTime: Date, endTime: Date): Boolean {
+    val now = Date()
+    return now.after(startTime) && now.before(endTime)
 }
 
 fun createCustomMarkerBitmap(context: Context, percentage: Int): Bitmap {

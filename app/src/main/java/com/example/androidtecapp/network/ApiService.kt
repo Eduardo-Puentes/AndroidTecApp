@@ -1,6 +1,7 @@
 package com.example.androidtecapp.network
 
 import com.example.androidtecapp.models.User
+import com.example.androidtecapp.models.getTaller
 import com.example.androidtecapp.network.responses.UserResponse
 import retrofit2.Call
 import retrofit2.http.Body
@@ -17,5 +18,8 @@ interface ApiService {
     fun createUser(
         @Body user: User                        // User data in the request body
     ): Call<UserResponse>
+
+    @GET("/api/course")
+    fun getAllCourses(): Call<List<getTaller>>
 }
 

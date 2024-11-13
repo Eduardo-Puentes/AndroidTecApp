@@ -52,7 +52,7 @@ fun MainScreenContent(auth: FirebaseAuth) {
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding)) {
             if (isLoggedIn && userInfo != null) {
-                // Pass the user info to other screens once the user is logged in
+                Log.d("BASE", userInfo.toString());
                 MainAppWithBottomNav(userInfo = userInfo!!)
             } else {
                 if (showLogin) {

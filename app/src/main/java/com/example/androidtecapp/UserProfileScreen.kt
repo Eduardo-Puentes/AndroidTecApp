@@ -18,6 +18,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.androidtecapp.models.Notification
 import com.example.androidtecapp.models.User
 import com.example.androidtecapp.ui.theme.AndroidTecAppTheme
 
@@ -50,7 +51,7 @@ fun UserProfileScreen(userInfo: User) {
             height(16.dp))
 
             // Achievement List
-            AchievementsList()
+            userInfo.NotificationArray?.let { AchievementsList(notifications = it) }
         }
     }
 }
@@ -130,12 +131,12 @@ fun MedalItem(medalType: MedalType, count: Int) {
 }
 
 @Composable
-fun AchievementsList() {
+fun AchievementsList(notifications: List<Notification>) {
     Column {
-        AchievementItem(description = "Entregaste 20.4kg de cartón", medalType = MedalType.GOLD)
-        AchievementItem(description = "Gasto de agua reducido un 20%", medalType = MedalType.SILVER)
-        AchievementItem(description = "28 Carpools este mes", medalType = MedalType.BRONZE)
-        AchievementItem(description = "28 Carpools este mes", medalType = MedalType.GOLD)
+        notifications.forEach { notification ->
+            val (description, medalType) = mapNotificationToAchievement(notification)
+            AchievementItem(description = description, medalType = medalType)
+        }
     }
 }
 
@@ -170,14 +171,26 @@ fun AchievementItem(description: String, medalType: MedalType) {
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                painter = painterResource(id = medalDrawable), // Use the correct drawable for each medal type
+                painter = painterResource(id = medalDrawable),
                 contentDescription = "Medal",
                 modifier = Modifier.size(30.dp),
-                tint = Color.Unspecified // Prevent tinting to keep the original medal colors
+                tint = Color.Unspecified
             )
         }
     }
 }
+
+// Helper function to map notification to achievement description and medal type
+fun mapNotificationToAchievement(notification: Notification): Pair<String, MedalType> {
+    return when (notification.NotificationType) {
+        "RECOLLECT" -> Pair("Contribución en recolecta: ${notification.Message}", MedalType.BRONZE)
+        "COURSE" -> Pair("Participaste en un taller: ${notification.Message}", MedalType.SILVER)
+        "TRANSPORT" -> Pair("Realizaste una actividad de transporte: ${notification.Message}", MedalType.GOLD)
+        // Add additional mappings for different notification types as needed
+        else -> Pair("Logro desconocido: ${notification.Message}", MedalType.PLATINUM)
+    }
+}
+
 
 
 @Preview(showBackground = true)

@@ -17,5 +17,5 @@ data class User(
     val MedalDesecho: Int = 0,
     val Courses: List<String> = emptyList(),
     val CourseIDArray: List<String> = emptyList(),
-    val NotificationArray: List<String>? = null
+    val NotificationArray: List<Notification>? = emptyList()
 )
