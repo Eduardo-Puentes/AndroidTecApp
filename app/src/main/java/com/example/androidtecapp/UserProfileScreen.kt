@@ -1,5 +1,6 @@
 package com.example.androidtecapp
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -15,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -135,6 +137,7 @@ fun AchievementsList(notifications: List<Notification>) {
     Column {
         notifications.forEach { notification ->
             val (description, medalType) = mapNotificationToAchievement(notification)
+            Log.d("Medal", medalType.toString())
             AchievementItem(description = description, medalType = medalType)
         }
     }
@@ -143,10 +146,10 @@ fun AchievementsList(notifications: List<Notification>) {
 @Composable
 fun AchievementItem(description: String, medalType: MedalType) {
     val medalDrawable = when (medalType) {
-        MedalType.GOLD -> R.drawable.yemedal // Replace with your gold medal drawable
-        MedalType.SILVER -> R.drawable.brmedal // Replace with your silver medal drawable
-        MedalType.BRONZE -> R.drawable.pumedal // Replace with your bronze medal drawable
-        MedalType.PLATINUM -> R.drawable.blmedal // Replace with your platinum medal drawable
+        MedalType.GOLD -> R.drawable.yemedal
+        MedalType.SILVER -> R.drawable.brmedal
+        MedalType.BRONZE -> R.drawable.pumedal
+        MedalType.PLATINUM -> R.drawable.blmedal
     }
 
     Row(
@@ -159,8 +162,17 @@ fun AchievementItem(description: String, medalType: MedalType) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Description text
-        Text(text = description, fontSize = 16.sp)
+        // Description text with maxLines and overflow handling
+        Text(
+            text = description,
+            fontSize = 16.sp,
+            color = Color.Black,
+            maxLines = 2, // Limits to one line
+            overflow = TextOverflow.Ellipsis, // Truncates text with ellipsis if too long
+            modifier = Modifier.weight(1f) // Flexibly uses available width
+        )
+
+        Spacer(modifier = Modifier.width(8.dp))
 
         // Medal Icon
         Box(
@@ -170,15 +182,16 @@ fun AchievementItem(description: String, medalType: MedalType) {
                 .background(Color.Transparent),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
+            Image(
                 painter = painterResource(id = medalDrawable),
                 contentDescription = "Medal",
                 modifier = Modifier.size(30.dp),
-                tint = Color.Unspecified
+                alignment = Alignment.Center
             )
         }
     }
 }
+
 
 // Helper function to map notification to achievement description and medal type
 fun mapNotificationToAchievement(notification: Notification): Pair<String, MedalType> {
