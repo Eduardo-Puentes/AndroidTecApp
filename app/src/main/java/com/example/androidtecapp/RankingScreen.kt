@@ -6,6 +6,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -13,10 +18,34 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.androidtecapp.network.RetrofitClient
+import com.example.androidtecapp.network.TopTenArray
+import com.example.androidtecapp.network.TopTenUser
 import com.example.androidtecapp.ui.theme.AndroidTecAppTheme
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 @Composable
 fun RankingScreen() {
+    var topTenUsers by remember { mutableStateOf<List<TopTenUser>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    // Fetch ranking data
+    LaunchedEffect(Unit) {
+        fetchTopTenUsers(
+            onSuccess = { fetchedUsers ->
+                topTenUsers = fetchedUsers
+                isLoading = false
+            },
+            onError = { error ->
+                errorMessage = error
+                isLoading = false
+            }
+        )
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
     ) { innerPadding ->
@@ -41,34 +70,27 @@ fun RankingScreen() {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Ranking List
-            RankingList()
+            when {
+                isLoading -> CircularProgressIndicator()
+                errorMessage != null -> Text(
+                    text = "Error: $errorMessage",
+                    color = Color.Red,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                else -> RankingList(users = topTenUsers)
+            }
         }
     }
 }
 
 @Composable
-fun RankingList() {
-    // Sample data
-    val users = listOf(
-        "Luis Isaias Montes Rico" to 53,
-        "Sofía Martínez López" to 52,
-        "Carlos Fernández Ruiz" to 50,
-        "María Isabel Gómez Herrera" to 47,
-        "Javier Ramírez Sánchez" to 42,
-        "Lucía Navarro Torres" to 38,
-        "Andrés Gutiérrez Pérez" to 37,
-        "Gabriela Castillo Morales" to 33,
-        "Fernando Rojas García" to 29,
-        "Ana Patricia Ortega Jiménez" to 29
-    )
-
+fun RankingList(users: List<TopTenUser>) {
     Column {
-        users.forEachIndexed { index, user ->
+        users.forEach { user ->
             RankingItem(
-                name = user.first,
-                score = user.second,
-                isTopUser = index == 0 // Highlight the top user
+                name = user.username,
+                score = user.place,
+                isTopUser = user.place == 1 // Highlight the top user
             )
             Spacer(modifier = Modifier.height(8.dp))
         }
@@ -109,10 +131,24 @@ fun RankingItem(name: String, score: Int, isTopUser: Boolean) {
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun RankingScreenPreview() {
-    AndroidTecAppTheme {
-        RankingScreen()
-    }
+
+fun fetchTopTenUsers(
+    onSuccess: (List<TopTenUser>) -> Unit,
+    onError: (String) -> Unit
+) {
+    val apiService = RetrofitClient.instance
+    apiService.getTopTen().enqueue(object : Callback<TopTenArray> {
+        override fun onResponse(call: Call<TopTenArray>, response: Response<TopTenArray>) {
+            if (response.isSuccessful) {
+                val topTenArray = response.body()
+                onSuccess(topTenArray?.userArray ?: emptyList())
+            } else {
+                onError("Failed to fetch ranking data")
+            }
+        }
+
+        override fun onFailure(call: Call<TopTenArray>, t: Throwable) {
+            onError(t.message ?: "Unknown error")
+        }
+    })
 }
