@@ -1,5 +1,6 @@
 package com.example.androidtecapp.network
 
+import com.example.androidtecapp.getRecolecta
 import com.example.androidtecapp.models.User
 import com.example.androidtecapp.models.getTaller
 import com.example.androidtecapp.network.responses.UserResponse
@@ -21,5 +22,8 @@ interface ApiService {
 
     @GET("/api/course")
     fun getAllCourses(): Call<List<getTaller>>
+
+    @GET("/api/recollect")
+    fun getAllRecolectas(): Call<List<getRecolecta>>
 }
 

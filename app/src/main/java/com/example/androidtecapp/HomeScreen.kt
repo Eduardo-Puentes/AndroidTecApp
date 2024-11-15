@@ -1,26 +1,19 @@
 package com.example.androidtecapp
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.androidtecapp.ui.theme.AndroidTecAppTheme
-import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
@@ -30,41 +23,19 @@ import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import android.graphics.Bitmap
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Text
-import androidx.compose.runtime.*
-import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
-import com.google.android.gms.maps.model.MarkerOptions
-import com.google.maps.android.compose.*
-import android.view.View
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.platform.AbstractComposeView
-import androidx.core.view.drawToBitmap
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
 import android.util.Log
 import androidx.compose.ui.graphics.Color as ComposeColor
-import androidx.compose.ui.graphics.toArgb
 import com.example.androidtecapp.models.getTaller
+import com.example.androidtecapp.network.ApiService
 import com.example.androidtecapp.network.RetrofitClient
 import retrofit2.Call
 import retrofit2.Callback
@@ -73,16 +44,144 @@ import java.util.Date
 
 @Composable
 fun HomeScreen() {
+    var talleres by remember { mutableStateOf<List<getTaller>>(emptyList()) }
+    var recolectas by remember { mutableStateOf<List<getRecolecta>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+
+    val apiService = RetrofitClient.instance
+
+    LaunchedEffect(Unit) {
+        // Fetch both talleres and recolectas
+        fetchData(
+            onSuccess = { fetchedTalleres, fetchedRecolectas ->
+                talleres = fetchedTalleres
+                recolectas = fetchedRecolectas
+                isLoading = false
+            },
+            onError = {
+                Log.e("HomeScreen", "Failed to fetch data: $it")
+                isLoading = false
+            },
+            apiService = apiService
+        )
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding)) {
             SearchBar()
-            MapViewWithCustomMarkers()
-            CollectionList()
+            if (isLoading) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+            } else {
+                MapViewWithCustomMarkers(talleres = talleres, recolectas = recolectas)
+                CollectionList(talleres = talleres)
+            }
         }
     }
 }
+
+@Composable
+fun MapViewWithCustomMarkers(talleres: List<getTaller>, recolectas: List<getRecolecta>) {
+    val context = LocalContext.current
+    val initialLocation = LatLng(19.4326, -99.1332) // Example: Mexico City
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(initialLocation, 10f)
+    }
+
+    // Combine talleres and recolectas into markers
+    val markers = (talleres.map { taller ->
+        MarkerInfo(
+            position = LatLng(taller.latitude, taller.longitude),
+            percentage = calculateCompletionPercentage(taller)
+        )
+    } + recolectas.map { recolecta ->
+        MarkerInfo(
+            position = LatLng(recolecta.latitude, recolecta.longitude),
+            percentage = calculateRecolectaProgress(recolecta)
+        )
+    })
+
+    GoogleMap(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(250.dp),
+        cameraPositionState = cameraPositionState,
+        properties = MapProperties(isMyLocationEnabled = false),
+        uiSettings = MapUiSettings(zoomControlsEnabled = true)
+    ) {
+        markers.forEach { markerInfo ->
+            val bitmap = createCustomMarkerBitmap(context, markerInfo.percentage)
+            Marker(
+                state = MarkerState(position = markerInfo.position),
+                icon = BitmapDescriptorFactory.fromBitmap(bitmap),
+                title = "Progress: ${markerInfo.percentage}%"
+            )
+        }
+    }
+}
+
+// Data class for recolecta
+data class getRecolecta(
+    val title: String,
+    val longitude: Double,
+    val latitude: Double,
+    val startTime: Date,
+    val endTime: Date
+)
+
+// Helper functions for recolecta
+fun calculateRecolectaProgress(recolecta: getRecolecta): Int {
+    // Replace with actual logic
+    return 75
+}
+
+fun fetchData(
+    onSuccess: (List<getTaller>, List<getRecolecta>) -> Unit,
+    onError: (String) -> Unit,
+    apiService: ApiService
+) {
+    val talleresCall = apiService.getAllCourses()
+    val recolectasCall = apiService.getAllRecolectas()
+
+    var talleres: List<getTaller>? = null
+    var recolectas: List<getRecolecta>? = null
+
+    talleresCall.enqueue(object : Callback<List<getTaller>> {
+        override fun onResponse(call: Call<List<getTaller>>, response: Response<List<getTaller>>) {
+            if (response.isSuccessful) {
+                talleres = response.body() ?: emptyList()
+                if (recolectas != null) {
+                    onSuccess(talleres!!, recolectas!!)
+                }
+            } else {
+                onError("Failed to fetch talleres")
+            }
+        }
+
+        override fun onFailure(call: Call<List<getTaller>>, t: Throwable) {
+            onError(t.message ?: "Unknown error")
+        }
+    })
+
+    recolectasCall.enqueue(object : Callback<List<getRecolecta>> {
+        override fun onResponse(call: Call<List<getRecolecta>>, response: Response<List<getRecolecta>>) {
+            if (response.isSuccessful) {
+                recolectas = response.body() ?: emptyList()
+                if (talleres != null) {
+                    onSuccess(talleres!!, recolectas!!)
+                }
+            } else {
+                onError("Failed to fetch recolectas")
+            }
+        }
+
+        override fun onFailure(call: Call<List<getRecolecta>>, t: Throwable) {
+            onError(t.message ?: "Unknown error")
+        }
+    })
+}
+
 
 @Composable
 fun SearchBar() {
@@ -161,7 +260,7 @@ data class MarkerInfo(
 )
 
 @Composable
-fun CollectionList() {
+fun CollectionList(talleres: List<getTaller>) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
