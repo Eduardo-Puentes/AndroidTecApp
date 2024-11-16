@@ -12,14 +12,14 @@ import retrofit2.http.POST
 import retrofit2.http.Path
 
 data class TopTenUser(
-    val userFBID: String,
-    val username: String,
-    val email: String,
-    val place: Int
+    val UserFBID: String,
+    val Username: String,
+    val Email: String,
+    val Place: Int
 )
 
 data class TopTenArray(
-    val userArray: List<TopTenUser>
+    val UserArray: List<TopTenUser>
 )
 
 
@@ -29,7 +29,7 @@ interface ApiService {
 
     @POST("/api/user")
     fun createUser(
-        @Body user: User                        // User data in the request body
+        @Body user: User
     ): Call<UserResponse>
 
     @GET("/api/course")

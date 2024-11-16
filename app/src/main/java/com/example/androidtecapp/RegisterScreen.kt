@@ -26,24 +26,22 @@ import retrofit2.Response
 @Composable
 fun RegisterScreen(onNavigateToLogin: () -> Unit) {
     val context = LocalContext.current
-    val auth = FirebaseAuth.getInstance()  // Initialize FirebaseAuth instance
+    val auth = FirebaseAuth.getInstance()
 
-    // Manage the state of each input field
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
     val gradient = Brush.linearGradient(
-        colors = listOf(Color(0xFFFFEA05), Color(0xFF5AC86E)) // Example gradient
+        colors = listOf(Color(0xFFFFEA05), Color(0xFF5AC86E))
     )
     val noGradient = Brush.linearGradient(
-        colors = listOf(Color(0xFF5AC86E), Color(0xFF5AC86E)) // Solid green for register button
+        colors = listOf(Color(0xFF5AC86E), Color(0xFF5AC86E))
     )
 
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        // Content
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -87,7 +85,6 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit) {
             GradientButton(
                 text = "Crear Cuenta",
                 onClick = {
-                    // Call Firebase registration and pass the data to Go API upon success
                     registerUserWithFirebase(auth, context, username, email, password, onNavigateToLogin)
                 },
                 gradient = gradient
@@ -118,7 +115,6 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit) {
 }
 
 
-// Register user with Firebase and then in your Go API
 fun registerUserWithFirebase(
     auth: FirebaseAuth,
     context: android.content.Context,
@@ -127,23 +123,18 @@ fun registerUserWithFirebase(
     password: String,
     onNavigateToLogin: () -> Unit
 ) {
-    // Register user with Firebase
     auth.createUserWithEmailAndPassword(email, password)
         .addOnCompleteListener { task ->
             if (task.isSuccessful) {
-                // Get the Firebase UID after successful registration
                 val firebaseUser = auth.currentUser
                 firebaseUser?.let { user ->
-                    val uid = user.uid  // This is the Firebase-generated UID
+                    val uid = user.uid
 
-                    // Create a new user with the retrieved UID, name, and email
                     val newUser = User(FBID = uid, Username = username, Email = email)
 
-                    // Now send this user data to your Go API with UID in headers
                     registerUserInDatabase(newUser, context, onNavigateToLogin)
                 }
             } else {
-                // Handle registration failure
                 Toast.makeText(context, "Firebase Registration Failed: ${task.exception?.message}", Toast.LENGTH_LONG).show()
             }
         }
@@ -151,28 +142,24 @@ fun registerUserWithFirebase(
 
 
 fun registerUserInDatabase(user: User, context: android.content.Context, onNavigateToLogin: () -> Unit) {
-    // Get the Firebase ID token
     FirebaseAuth.getInstance().currentUser?.getIdToken(true)?.addOnCompleteListener { task ->
         if (task.isSuccessful) {
             val firebaseToken = task.result?.token
 
             if (firebaseToken != null) {
-                // Use Retrofit to send the UID as a header and user info in the request body
                 RetrofitClient.instance.createUser(user).enqueue(object : Callback<UserResponse> {
                     override fun onResponse(call: Call<UserResponse>, response: Response<UserResponse>) {
                         if (response.isSuccessful) {
                             Toast.makeText(context, "User registered successfully in the database", Toast.LENGTH_LONG).show()
-                            onNavigateToLogin() // Redirect to login after successful registration
+                            onNavigateToLogin()
                         } else {
                             Toast.makeText(context, "Failed to register user in the database", Toast.LENGTH_LONG).show()
                         }
                     }
 
                     override fun onFailure(call: Call<UserResponse>, t: Throwable) {
-                        // Log the full stack trace and add custom tags
-                        Log.e("MyApp", "Network error occurred", t) // Log with tag "MyApp"
+                        Log.e("MyApp", "Network error occurred", t)
 
-                        // Optionally, also print the stack trace in Logcat
                         t.printStackTrace()
 
                         Toast.makeText(context, "Network error: ${t.message}", Toast.LENGTH_LONG).show()

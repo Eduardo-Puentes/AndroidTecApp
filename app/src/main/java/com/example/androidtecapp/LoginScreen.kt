@@ -34,7 +34,7 @@ fun GradientButton(
         Button(
             onClick = onClick,
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color.Transparent // Transparent to show the gradient
+                containerColor = Color.Transparent
             ),
             shape = RoundedCornerShape(8.dp),
             modifier = Modifier.fillMaxWidth()
@@ -48,23 +48,19 @@ fun GradientButton(
 fun LoginScreen(onLoginSuccess: (String, String) -> Unit, onNavigateToRegister: () -> Unit) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var errorMessage by remember { mutableStateOf<String?>(null) } // For displaying error messages
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     val gradient = Brush.linearGradient(
-        colors = listOf(Color(0xFFFFEA05), Color(0xFF5AC86e)) // Example gradient
+        colors = listOf(Color(0xFFFFEA05), Color(0xFF5AC86e))
     )
 
     val noGradient = Brush.linearGradient(
-        colors = listOf(Color(0xFF5AC86E), Color(0xFF5AC86E)) // Solid green for register button
+        colors = listOf(Color(0xFF5AC86E), Color(0xFF5AC86E))
     )
 
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        // Background images...
-        // Logo and Title...
-
-        // Login Form
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -110,7 +106,7 @@ fun LoginScreen(onLoginSuccess: (String, String) -> Unit, onNavigateToRegister: 
                     if (email.isEmpty() || password.isEmpty()) {
                         errorMessage = "Please enter both email and password"
                     } else {
-                        errorMessage = null // Clear error if inputs are valid
+                        errorMessage = null
                         onLoginSuccess(email, password)
                     }
                 },
@@ -119,7 +115,6 @@ fun LoginScreen(onLoginSuccess: (String, String) -> Unit, onNavigateToRegister: 
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Display error message if available
             if (errorMessage != null) {
                 Text(
                     text = errorMessage!!,

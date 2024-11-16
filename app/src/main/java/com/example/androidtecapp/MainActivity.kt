@@ -31,7 +31,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Initialize Firebase Auth
         auth = FirebaseAuth.getInstance()
 
         setContent {
@@ -45,7 +44,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainScreenContent(auth: FirebaseAuth) {
     var isLoggedIn by remember { mutableStateOf(false) }
-    var userInfo by remember { mutableStateOf<User?>(null) } // Store user info here
+    var userInfo by remember { mutableStateOf<User?>(null) }
     var showLogin by remember { mutableStateOf(true) }
     val context = LocalContext.current
 
@@ -61,7 +60,7 @@ fun MainScreenContent(auth: FirebaseAuth) {
                             signInWithFirebase(email, password, auth) { success, fetchedUserInfo ->
                                 if (success && fetchedUserInfo != null) {
                                     isLoggedIn = true
-                                    userInfo = fetchedUserInfo // Store fetched user info
+                                    userInfo = fetchedUserInfo
                                 } else {
                                     Log.e("Res","$fetchedUserInfo");
                                     Toast.makeText(context, "Login failed. Please check your credentials.", Toast.LENGTH_LONG).show()
@@ -93,7 +92,7 @@ fun MainAppWithBottomNav(userInfo: User) {
         Box(modifier = Modifier.padding(innerPadding)) {
             when (selectedScreen) {
                 Screen.Home -> HomeScreen()
-                Screen.UserProfile -> UserProfileScreen(userInfo = userInfo) // Pass user info here
+                Screen.UserProfile -> UserProfileScreen(userInfo = userInfo)
                 Screen.Ranking -> RankingScreen()
             }
         }
@@ -111,7 +110,6 @@ fun BottomNavigationBar(selectedScreen: Screen, onScreenSelected: (Screen) -> Un
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceAround
         ) {
-            // User Icon
             IconButton(onClick = { onScreenSelected(Screen.UserProfile) }) {
                 Icon(
                     painter = painterResource(id = R.drawable.person_icon),
@@ -121,17 +119,6 @@ fun BottomNavigationBar(selectedScreen: Screen, onScreenSelected: (Screen) -> Un
                 )
             }
 
-            // Groups Icon
-//            IconButton(onClick = { onScreenSelected(Screen.Groups) }) {
-//                Icon(
-//                    painter = painterResource(id = R.drawable.people_icon),
-//                    contentDescription = "Groups",
-//                    modifier = Modifier.size(20.dp),
-//                    tint = if (selectedScreen == Screen.Groups) Color.Green else Color.Gray
-//                )
-//            }
-
-            // Logo Icon (Home)
             IconButton(onClick = { onScreenSelected(Screen.Home) }) {
                 Icon(
                     painter = painterResource(id = R.drawable.greenmateslogo),
@@ -140,7 +127,6 @@ fun BottomNavigationBar(selectedScreen: Screen, onScreenSelected: (Screen) -> Un
                 )
             }
 
-            // Ranking Icon
             IconButton(onClick = { onScreenSelected(Screen.Ranking) }) {
                 Icon(
                     painter = painterResource(id = R.drawable.list_icon),
@@ -149,16 +135,6 @@ fun BottomNavigationBar(selectedScreen: Screen, onScreenSelected: (Screen) -> Un
                     tint = if (selectedScreen == Screen.Ranking) Color.Green else Color.Gray
                 )
             }
-
-//            // Search Icon
-//            IconButton(onClick = { onScreenSelected(Screen.Search) }) {
-//                Icon(
-//                    painter = painterResource(id = R.drawable.search_icon),
-//                    contentDescription = "Search",
-//                    modifier = Modifier.size(20.dp),
-//                    tint = if (selectedScreen == Screen.Search) Color.Green else Color.Gray
-//                )
-//            }
         }
     }
 }
@@ -178,10 +154,10 @@ fun signInWithFirebase(
 
                 val firebaseUser = auth.currentUser
                 firebaseUser?.let { user ->
-                    val uid = user.uid // Get Firebase UID
+                    val uid = user.uid
                     Log.d("SignIn", "Firebase UID: $uid")
 
-                    // Fetch additional user data from your external database using the Firebase UID
+
                     fetchUserData(uid) { userInfo ->
                         if (userInfo != null) {
                             Log.d("SignIn", "Successfully fetched user data from database")
@@ -199,7 +175,6 @@ fun signInWithFirebase(
         }
 }
 
-// Fetch user data from your API using the Firebase UID
 fun fetchUserData(uid: String, onResult: (User?) -> Unit) {
     Log.d("FetchUserData", "Fetching user data for UID: $uid")
 
@@ -209,7 +184,7 @@ fun fetchUserData(uid: String, onResult: (User?) -> Unit) {
                 val userResponse = response.body()
                 if (userResponse?.user != null) {
                     Log.d("FetchUserData", "Successfully retrieved user data: ${userResponse.user}")
-                    onResult(userResponse.user) // Pass the User object to the callback
+                    onResult(userResponse.user)
                 } else {
                     Log.e("FetchUserData", "User data is null in the response")
                     onResult(null)
@@ -231,14 +206,12 @@ fun fetchUserData(uid: String, onResult: (User?) -> Unit) {
 @Composable
 fun MainScreenPreview() {
     AndroidTecAppTheme {
-        MainScreenContent(FirebaseAuth.getInstance()) // For previewing
+        MainScreenContent(FirebaseAuth.getInstance())
     }
 }
 
 enum class Screen {
     Home,
     UserProfile,
-    //Groups,
     Ranking,
-    //Search
 }

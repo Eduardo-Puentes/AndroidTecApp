@@ -36,23 +36,19 @@ fun UserProfileScreen(userInfo: User) {
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Search Bar
             SearchBar()
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // User Information
             UserInfoSection(userInfo = userInfo)
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Medals Section
             MedalsSection(mt = userInfo.MedalTrans, me = userInfo.MedalEnergy, mc = userInfo.MedalConsume, md = userInfo.MedalDesecho)
 
             Spacer(modifier = Modifier.
             height(16.dp))
 
-            // Achievement List
             userInfo.NotificationArray?.let { AchievementsList(notifications = it) }
         }
     }
@@ -61,34 +57,31 @@ fun UserProfileScreen(userInfo: User) {
 @Composable
 fun UserInfoSection(userInfo: User) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        // Generate and display the QR Code
         val qrCodeText = userInfo.FBID
         val qrCodeBitmap = remember { generateQRCode(qrCodeText, 450) }
 
         Box(
             modifier = Modifier
-                .size(180.dp) // Adjust size to fit the QR code and the frame
+                .size(180.dp)
                 .clip(RoundedCornerShape(16.dp)),
             contentAlignment = Alignment.Center
         ) {
-            // QR Code (This will be behind the frame)
             if (qrCodeBitmap != null) {
                 Image(
                     bitmap = qrCodeBitmap.asImageBitmap(),
                     contentDescription = "QR Code",
-                    modifier = Modifier.fillMaxSize(), // Ensure QR code takes up the entire size
+                    modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.FillBounds
                 )
             } else {
                 Text(text = "QR Code Failed")
             }
 
-            // Frame Image (This will be on top of the QR code)
             Image(
-                painter = painterResource(id = R.drawable.qrframe), // Replace with your frame drawable
+                painter = painterResource(id = R.drawable.qrframe),
                 contentDescription = "QR Code Frame",
-                modifier = Modifier.fillMaxSize(), // Frame takes up full size
-                contentScale = ContentScale.FillBounds // Ensure the frame fills the box
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.FillBounds
             )
         }
 
@@ -113,21 +106,19 @@ fun MedalsSection(mt: Int, me: Int, mc: Int, md: Int) {
 @Composable
 fun MedalItem(medalType: MedalType, count: Int) {
     val medalDrawable = when (medalType) {
-        MedalType.GOLD -> R.drawable.brmedal // Replace with your gold medal drawable
-        MedalType.SILVER -> R.drawable.pumedal // Replace with your silver medal drawable
-        MedalType.BRONZE -> R.drawable.blmedal  // Replace with your bronze medal drawable
-        MedalType.PLATINUM -> R.drawable.yemedal// Replace with your platinum medal drawable
+        MedalType.GOLD -> R.drawable.brmedal
+        MedalType.SILVER -> R.drawable.pumedal
+        MedalType.BRONZE -> R.drawable.blmedal
+        MedalType.PLATINUM -> R.drawable.yemedal
     }
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        // Image to display the medal based on its type
         Icon(
-            painter = painterResource(id = medalDrawable), // Use the correct drawable
+            painter = painterResource(id = medalDrawable),
             contentDescription = "Medal",
             modifier = Modifier.size(40.dp),
             tint = Color.Unspecified
         )
-        // Display the count of medals
         Text(text = "$count", fontSize = 14.sp)
     }
 }
@@ -162,19 +153,17 @@ fun AchievementItem(description: String, medalType: MedalType) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Description text with maxLines and overflow handling
         Text(
             text = description,
             fontSize = 16.sp,
             color = Color.Black,
-            maxLines = 2, // Limits to one line
-            overflow = TextOverflow.Ellipsis, // Truncates text with ellipsis if too long
-            modifier = Modifier.weight(1f) // Flexibly uses available width
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
         )
 
         Spacer(modifier = Modifier.width(8.dp))
 
-        // Medal Icon
         Box(
             modifier = Modifier
                 .size(40.dp)
@@ -193,13 +182,11 @@ fun AchievementItem(description: String, medalType: MedalType) {
 }
 
 
-// Helper function to map notification to achievement description and medal type
 fun mapNotificationToAchievement(notification: Notification): Pair<String, MedalType> {
     return when (notification.NotificationType) {
         "RECOLLECT" -> Pair("Contribución en recolecta: ${notification.Message}", MedalType.BRONZE)
         "COURSE" -> Pair("Participaste en un taller: ${notification.Message}", MedalType.SILVER)
         "TRANSPORT" -> Pair("Realizaste una actividad de transporte: ${notification.Message}", MedalType.GOLD)
-        // Add additional mappings for different notification types as needed
         else -> Pair("Logro desconocido: ${notification.Message}", MedalType.PLATINUM)
     }
 }
@@ -209,7 +196,6 @@ fun mapNotificationToAchievement(notification: Notification): Pair<String, Medal
 @Preview(showBackground = true)
 @Composable
 fun UserProfileScreenPreview() {
-    // Create a sample user data for preview
     val sampleUser = User(
         Username = "Luis Isai",
         Email = "example@gmail.com",
@@ -217,7 +203,7 @@ fun UserProfileScreenPreview() {
     )
 
     AndroidTecAppTheme {
-        UserProfileScreen(userInfo = sampleUser) // Pass the sample user to the preview
+        UserProfileScreen(userInfo = sampleUser)
     }
 }
 
@@ -226,5 +212,5 @@ enum class MedalType {
     GOLD,
     SILVER,
     BRONZE,
-    PLATINUM // Example of a fourth type
+    PLATINUM
 }

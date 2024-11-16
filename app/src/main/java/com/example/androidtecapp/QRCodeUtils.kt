@@ -19,11 +19,10 @@ fun generateQRCode(text: String, size: Int): Bitmap? {
         val bitMatrix: BitMatrix = writer.encode(text, BarcodeFormat.QR_CODE, size, size, hints)
         val width = bitMatrix.width
         val height = bitMatrix.height
-        val bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888) // ARGB_8888 supports transparency
+        val bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
 
-        // Color for QR code foreground (BLACK) and background (Transparent)
         val qrCodeColor = Color.BLACK
-        val transparent = Color.TRANSPARENT // Transparent background
+        val transparent = Color.TRANSPARENT
 
         for (x in 0 until width) {
             for (y in 0 until height) {

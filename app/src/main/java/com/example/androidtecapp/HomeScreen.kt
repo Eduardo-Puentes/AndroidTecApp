@@ -37,6 +37,7 @@ import androidx.compose.ui.graphics.Color as ComposeColor
 import com.example.androidtecapp.models.getTaller
 import com.example.androidtecapp.network.ApiService
 import com.example.androidtecapp.network.RetrofitClient
+import com.google.gson.annotations.SerializedName
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -51,7 +52,6 @@ fun HomeScreen() {
     val apiService = RetrofitClient.instance
 
     LaunchedEffect(Unit) {
-        // Fetch both talleres and recolectas
         fetchData(
             onSuccess = { fetchedTalleres, fetchedRecolectas ->
                 talleres = fetchedTalleres
@@ -75,21 +75,68 @@ fun HomeScreen() {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
             } else {
                 MapViewWithCustomMarkers(talleres = talleres, recolectas = recolectas)
-                CollectionList(talleres = talleres)
+                CollectionList(talleres = talleres, recolectas = recolectas)
             }
         }
     }
 }
 
 @Composable
+fun CollectionList(talleres: List<getTaller>, recolectas: List<getRecolecta>) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "Talleres Activos",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        talleres.forEach { taller ->
+            CollectionItem(
+                title = taller.title,
+                address = "${taller.longitude}, ${taller.latitude}",
+                percentage = calculateCompletionPercentage(taller),
+                isOngoing = isCourseOngoing(taller.startTime, taller.endTime)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "Recolectas Activas",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        recolectas.forEach { recolecta ->
+            CollectionItem(
+                title = "Recolecta - ${recolecta.recollectID}",
+                address = "${recolecta.longitude}, ${recolecta.latitude}",
+                percentage = calculateRecolectaProgress(recolecta),
+                isOngoing = isCourseOngoing(recolecta.startTime, recolecta.endTime)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+    }
+}
+
+
+@Composable
 fun MapViewWithCustomMarkers(talleres: List<getTaller>, recolectas: List<getRecolecta>) {
     val context = LocalContext.current
-    val initialLocation = LatLng(19.4326, -99.1332) // Example: Mexico City
+    val initialLocation = LatLng(19.4326, -99.1332)
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(initialLocation, 10f)
     }
 
-    // Combine talleres and recolectas into markers
     val markers = (talleres.map { taller ->
         MarkerInfo(
             position = LatLng(taller.latitude, taller.longitude),
@@ -121,18 +168,36 @@ fun MapViewWithCustomMarkers(talleres: List<getTaller>, recolectas: List<getReco
     }
 }
 
-// Data class for recolecta
 data class getRecolecta(
-    val title: String,
-    val longitude: Double,
-    val latitude: Double,
-    val startTime: Date,
-    val endTime: Date
+    @SerializedName("RecollectID") val recollectID: String,
+    @SerializedName("CollaboratorFBID") val collaboratorFBID: String,
+    @SerializedName("Cardboard") val cardboard: Int,
+    @SerializedName("Glass") val glass: Int,
+    @SerializedName("Tetrapack") val tetrapack: Int,
+    @SerializedName("Plastic") val plastic: Int,
+    @SerializedName("Paper") val paper: Int,
+    @SerializedName("Metal") val metal: Int,
+    @SerializedName("StartTime") val startTime: Date,
+    @SerializedName("EndTime") val endTime: Date,
+    @SerializedName("Longitude") val longitude: Double,
+    @SerializedName("Latitude") val latitude: Double,
+    @SerializedName("Limit") val limit: Int,
+    @SerializedName("DonationArray") val donationArray: List<Donation>
 )
 
-// Helper functions for recolecta
+data class Donation(
+    @SerializedName("UserFBID") val userFBID: String,
+    @SerializedName("Username") val username: String,
+    @SerializedName("Carboard") val cardboard: Double,
+    @SerializedName("Glass") val glass: Double,
+    @SerializedName("Metal") val metal: Double,
+    @SerializedName("Paper") val paper: Double,
+    @SerializedName("Plastic") val plastic: Double,
+    @SerializedName("Tetrapack") val tetrapack: Double
+)
+
+
 fun calculateRecolectaProgress(recolecta: getRecolecta): Int {
-    // Replace with actual logic
     return 75
 }
 
@@ -183,6 +248,7 @@ fun fetchData(
 }
 
 
+
 @Composable
 fun SearchBar() {
     TextField(
@@ -196,132 +262,10 @@ fun SearchBar() {
     )
 }
 
-@Composable
-fun MapViewWithCustomMarkers() {
-    val context = LocalContext.current
-    val initialLocation = LatLng(19.4326, -99.1332) // Example: Mexico City
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(initialLocation, 10f)
-    }
-
-    // Example markers with percentages
-    val markers = listOf(
-        MarkerInfo(LatLng(19.4326, -99.1332), 50),
-        MarkerInfo(LatLng(19.4426, -99.1332), 75),
-        MarkerInfo(LatLng(19.4326, -99.1432), 90)
-    )
-
-    GoogleMap(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(250.dp), // Adjust height as needed
-        cameraPositionState = cameraPositionState,
-        properties = MapProperties(isMyLocationEnabled = false),
-        uiSettings = MapUiSettings(zoomControlsEnabled = true)
-    ) {
-        markers.forEach { markerInfo ->
-            val bitmap = createCustomMarkerBitmap(context, markerInfo.percentage)
-            Marker(
-                state = MarkerState(position = markerInfo.position),
-                icon = BitmapDescriptorFactory.fromBitmap(bitmap),
-                title = "Progress: ${markerInfo.percentage}%"
-            )
-        }
-    }
-}
-
-@Composable
-fun CustomMarkerContent(percentage: Int) {
-    Box(
-        modifier = Modifier
-            .size(100.dp)
-            .background(Color.Transparent)
-    ) {
-        CircularProgressIndicator(
-            progress = percentage / 100f,
-            modifier = Modifier.size(100.dp),
-            color = Color.Green,
-            strokeWidth = 6.dp
-        )
-        Text(
-            text = "$percentage%",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.align(Alignment.Center),
-            color = Color.Red
-        )
-    }
-}
-
-// Data class to hold marker information
 data class MarkerInfo(
     val position: LatLng,
     val percentage: Int
 )
-
-@Composable
-fun CollectionList(talleres: List<getTaller>) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
-    ) {
-        CoursesScreen()
-        // Add more items as needed
-    }
-}
-
-@Composable
-fun CoursesScreen() {
-    var talleres by remember { mutableStateOf<List<getTaller>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
-    val apiService = RetrofitClient.instance
-
-    LaunchedEffect(Unit) {
-        // Fetch the talleres when the composable is launched
-        apiService.getAllCourses().enqueue(object : Callback<List<getTaller>> {
-            override fun onResponse(call: Call<List<getTaller>>, response: Response<List<getTaller>>) {
-                if (response.isSuccessful) {
-                    talleres = response.body() ?: emptyList()
-                } else {
-                    Log.e("CoursesScreen", "Failed to fetch courses: ${response.errorBody()?.string()}")
-                }
-                isLoading = false
-            }
-
-            override fun onFailure(call: Call<List<getTaller>>, t: Throwable) {
-                Log.e("CoursesScreen", "Network error: ${t.message}")
-                isLoading = false
-            }
-        })
-    }
-
-    // Display loading indicator or list of courses
-    if (isLoading) {
-        CircularProgressIndicator()
-    } else {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Active Courses",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Render each `getTaller` in the list
-            talleres.forEach { taller ->
-                CollectionItem(
-                    title = taller.title,
-                    address = "${taller.longitude}, ${taller.latitude}", // Display coordinates as address
-                    percentage = calculateCompletionPercentage(taller), // Customize as needed
-                    isOngoing = isCourseOngoing(taller.startTime, taller.endTime)
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-        }
-    }
-}
 
 @Composable
 fun CollectionItem(title: String, address: String, percentage: Int, isOngoing: Boolean) {
@@ -364,9 +308,7 @@ fun CollectionItem(title: String, address: String, percentage: Int, isOngoing: B
     }
 }
 
-// Helper functions
 fun calculateCompletionPercentage(taller: getTaller): Int {
-    // Replace with actual calculation logic
     return 50
 }
 
@@ -376,34 +318,28 @@ fun isCourseOngoing(startTime: Date, endTime: Date): Boolean {
 }
 
 fun createCustomMarkerBitmap(context: Context, percentage: Int): Bitmap {
-    val size = 100 // Size of the bitmap
+    val size = 100
     val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)
 
-    // Background paint for circular marker
     val backgroundPaint = Paint().apply {
-        color = ComposeColor.Green.toArgb() // Green color for marker background
-        isAntiAlias = true
+        color = ComposeColor.Green.toArgb()
     }
 
-    // Draw the circular background
     val radius = size / 2f
     canvas.drawCircle(radius, radius, radius, backgroundPaint)
 
-    // Progress indicator paint
     val progressPaint = Paint().apply {
-        color = ComposeColor.Red.toArgb() // Red color for progress bar
+        color = ComposeColor.Red.toArgb()
         style = Paint.Style.STROKE
         strokeWidth = 12f
         isAntiAlias = true
     }
 
-    // Draw the progress arc
     val rect = RectF(12f, 12f, size - 12f, size - 12f)
-    val sweepAngle = percentage * 3.6f // Convert percentage to degrees
+    val sweepAngle = percentage * 3.6f
     canvas.drawArc(rect, -90f, sweepAngle, false, progressPaint)
 
-    // Text paint for percentage
     val textPaint = Paint().apply {
         color = ComposeColor.White.toArgb()
         textSize = 30f

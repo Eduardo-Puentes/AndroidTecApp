@@ -32,7 +32,6 @@ fun RankingScreen() {
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // Fetch ranking data
     LaunchedEffect(Unit) {
         fetchTopTenUsers(
             onSuccess = { fetchedUsers ->
@@ -56,15 +55,13 @@ fun RankingScreen() {
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Search Bar
             SearchBar()
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Ranking Title
             Text(
                 text = "Ranking Semanal",
-                style = MaterialTheme.typography.headlineSmall,  // Updated for Material3
+                style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
@@ -88,9 +85,9 @@ fun RankingList(users: List<TopTenUser>) {
     Column {
         users.forEach { user ->
             RankingItem(
-                name = user.username,
-                score = user.place,
-                isTopUser = user.place == 1 // Highlight the top user
+                name = user.Username,
+                score = user.Place,
+                isTopUser = user.Place == 1
             )
             Spacer(modifier = Modifier.height(8.dp))
         }
@@ -108,14 +105,12 @@ fun RankingItem(name: String, score: Int, isTopUser: Boolean) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // User Name
         Text(
             text = name,
-            style = MaterialTheme.typography.bodyLarge,  // Updated for Material3
-            modifier = Modifier.weight(1f) // Occupy most of the space
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f)
         )
 
-        // Score with medal
         Box(
             modifier = Modifier
                 .size(40.dp)
@@ -125,7 +120,7 @@ fun RankingItem(name: String, score: Int, isTopUser: Boolean) {
             Text(
                 text = "$score",
                 color = Color.White,
-                style = MaterialTheme.typography.bodyLarge  // Updated for Material3
+                style = MaterialTheme.typography.bodyLarge
             )
         }
     }
@@ -141,7 +136,7 @@ fun fetchTopTenUsers(
         override fun onResponse(call: Call<TopTenArray>, response: Response<TopTenArray>) {
             if (response.isSuccessful) {
                 val topTenArray = response.body()
-                onSuccess(topTenArray?.userArray ?: emptyList())
+                onSuccess(topTenArray?.UserArray ?: emptyList())
             } else {
                 onError("Failed to fetch ranking data")
             }
