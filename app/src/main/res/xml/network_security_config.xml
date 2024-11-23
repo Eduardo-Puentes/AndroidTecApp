@@ -3,6 +3,7 @@
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">localhost</domain>
         <domain includeSubdomains="true">10.0.2.2</domain>
+        <domain includeSubdomains="true">7cae-189-156-240-57.ngrok-free.app</domain>
         <domain includeSubdomains="true">10.50.90.159</domain>
     </domain-config>
     <base-config cleartextTrafficPermitted="true" />

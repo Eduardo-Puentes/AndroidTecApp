@@ -23,9 +23,13 @@ import androidx.compose.ui.unit.sp
 import com.example.androidtecapp.models.Notification
 import com.example.androidtecapp.models.User
 import com.example.androidtecapp.ui.theme.AndroidTecAppTheme
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.unit.dp
 
 @Composable
-fun UserProfileScreen(userInfo: User) {
+fun UserProfileScreen(userInfo: User, onLogout: () -> Unit) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
     ) { innerPadding ->
@@ -34,25 +38,57 @@ fun UserProfileScreen(userInfo: User) {
                 .padding(innerPadding)
                 .fillMaxSize()
                 .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            SearchBar()
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                item {
+                    UserInfoSection(userInfo = userInfo)
+                    Button(
+                        onClick = { onLogout() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        Text(text = "Cerrar Sesión", fontSize = 16.sp)
+                    }
+                }
 
-            UserInfoSection(userInfo = userInfo)
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                item {
+                    MedalsSection(
+                        mt = userInfo.MedalTrans,
+                        me = userInfo.MedalEnergy,
+                        mc = userInfo.MedalConsume,
+                        md = userInfo.MedalDesecho
+                    )
+                }
 
-            MedalsSection(mt = userInfo.MedalTrans, me = userInfo.MedalEnergy, mc = userInfo.MedalConsume, md = userInfo.MedalDesecho)
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
 
-            Spacer(modifier = Modifier.
-            height(16.dp))
-
-            userInfo.NotificationArray?.let { AchievementsList(notifications = it) }
+                userInfo.NotificationArray?.let { notifications ->
+                    items(notifications) { notification ->
+                        AchievementsList(notifications = listOf(notification))
+                    }
+                }
+            }
         }
     }
 }
+
+
 
 @Composable
 fun UserInfoSection(userInfo: User) {
@@ -86,6 +122,7 @@ fun UserInfoSection(userInfo: User) {
         }
 
         Text(text = userInfo.Username, fontSize = 20.sp, modifier = Modifier.padding(top = 8.dp))
+        Text(text = userInfo.Email, fontSize = 15.sp, modifier = Modifier.padding(top = 8.dp))
     }
 }
 
@@ -184,9 +221,9 @@ fun AchievementItem(description: String, medalType: MedalType) {
 
 fun mapNotificationToAchievement(notification: Notification): Pair<String, MedalType> {
     return when (notification.NotificationType) {
-        "RECOLLECT" -> Pair("Contribución en recolecta: ${notification.Message}", MedalType.BRONZE)
-        "COURSE" -> Pair("Participaste en un taller: ${notification.Message}", MedalType.SILVER)
-        "TRANSPORT" -> Pair("Realizaste una actividad de transporte: ${notification.Message}", MedalType.GOLD)
+        "DESECHO" -> Pair("Contribución en recolecta: ${notification.Message}", MedalType.BRONZE)
+        "CONSUMO" -> Pair("Participaste en un taller: ${notification.Message}", MedalType.SILVER)
+        "ENERGIA" -> Pair("Realizaste una actividad de transporte: ${notification.Message}", MedalType.GOLD)
         else -> Pair("Logro desconocido: ${notification.Message}", MedalType.PLATINUM)
     }
 }
@@ -203,7 +240,7 @@ fun UserProfileScreenPreview() {
     )
 
     AndroidTecAppTheme {
-        UserProfileScreen(userInfo = sampleUser)
+        UserProfileScreen(userInfo = sampleUser, onLogout = { Log.d("Logout", "Sesión cerrada") })
     }
 }
 

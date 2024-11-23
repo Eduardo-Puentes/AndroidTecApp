@@ -51,8 +51,13 @@ fun MainScreenContent(auth: FirebaseAuth) {
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding)) {
             if (isLoggedIn && userInfo != null) {
-                Log.d("BASE", userInfo.toString());
-                MainAppWithBottomNav(userInfo = userInfo!!)
+                MainAppWithBottomNav(userInfo = userInfo!!, onLogout = {
+                    auth.signOut()
+                    isLoggedIn = false
+                    userInfo = null
+                    showLogin = true
+                    Toast.makeText(context, "Sesión cerrada", Toast.LENGTH_SHORT).show()
+                })
             } else {
                 if (showLogin) {
                     LoginScreen(
@@ -62,8 +67,7 @@ fun MainScreenContent(auth: FirebaseAuth) {
                                     isLoggedIn = true
                                     userInfo = fetchedUserInfo
                                 } else {
-                                    Log.e("Res","$fetchedUserInfo");
-                                    Toast.makeText(context, "Login failed. Please check your credentials.", Toast.LENGTH_LONG).show()
+                                    Toast.makeText(context, "Login fallido. Verifica tus credenciales.", Toast.LENGTH_LONG).show()
                                 }
                             }
                         },
@@ -78,7 +82,7 @@ fun MainScreenContent(auth: FirebaseAuth) {
 }
 
 @Composable
-fun MainAppWithBottomNav(userInfo: User) {
+fun MainAppWithBottomNav(userInfo: User, onLogout: () -> Unit) {
     var selectedScreen by remember { mutableStateOf<Screen>(Screen.Home) }
 
     Scaffold(
@@ -92,7 +96,7 @@ fun MainAppWithBottomNav(userInfo: User) {
         Box(modifier = Modifier.padding(innerPadding)) {
             when (selectedScreen) {
                 Screen.Home -> HomeScreen()
-                Screen.UserProfile -> UserProfileScreen(userInfo = userInfo)
+                Screen.UserProfile -> UserProfileScreen(userInfo = userInfo, onLogout = onLogout)
                 Screen.Ranking -> RankingScreen()
             }
         }

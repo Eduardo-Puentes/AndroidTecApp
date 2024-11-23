@@ -33,6 +33,9 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
 import android.util.Log
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.graphics.Color as ComposeColor
 import com.example.androidtecapp.models.getTaller
 import com.example.androidtecapp.network.ApiService
@@ -41,12 +44,17 @@ import com.google.gson.annotations.SerializedName
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Locale
 
 @Composable
 fun HomeScreen() {
     var talleres by remember { mutableStateOf<List<getTaller>>(emptyList()) }
     var recolectas by remember { mutableStateOf<List<getRecolecta>>(emptyList()) }
+    var filteredTalleres by remember { mutableStateOf<List<getTaller>>(emptyList()) }
+    var filteredRecolectas by remember { mutableStateOf<List<getRecolecta>>(emptyList()) }
+    var searchQuery by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(true) }
 
     val apiService = RetrofitClient.instance
@@ -66,16 +74,34 @@ fun HomeScreen() {
         )
     }
 
+    LaunchedEffect(searchQuery) {
+        filteredTalleres = talleres.filter {
+            it.title.contains(searchQuery, ignoreCase = true)
+        }
+        filteredRecolectas = recolectas.filter {
+            it.endTime.toString().contains(searchQuery, ignoreCase = true)
+        }
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding)) {
-            SearchBar()
+            SearchBar(
+                searchQuery = searchQuery,
+                onSearchQueryChange = { searchQuery = it }
+            )
             if (isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
             } else {
-                MapViewWithCustomMarkers(talleres = talleres, recolectas = recolectas)
-                CollectionList(talleres = talleres, recolectas = recolectas)
+                if(!(filteredTalleres.isEmpty() && filteredRecolectas.isEmpty())) {
+                    MapViewWithCustomMarkers(talleres = filteredTalleres, recolectas = filteredRecolectas)
+                    CollectionList(talleres = filteredTalleres, recolectas = filteredRecolectas)
+                }
+                else {
+                    MapViewWithCustomMarkers(talleres = talleres, recolectas = recolectas)
+                    CollectionList(talleres = talleres, recolectas = recolectas)
+                }
             }
         }
     }
@@ -83,45 +109,61 @@ fun HomeScreen() {
 
 @Composable
 fun CollectionList(talleres: List<getTaller>, recolectas: List<getRecolecta>) {
-    Column(
+    LazyColumn(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp)
     ) {
-        Text(
-            text = "Talleres Activos",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold
-        )
+        item {
+            Spacer(modifier = Modifier.height(16.dp))
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Talleres Activos",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold
+            )
 
-        talleres.forEach { taller ->
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        items(talleres) { taller ->
             CollectionItem(
                 title = taller.title,
                 address = "${taller.longitude}, ${taller.latitude}",
                 percentage = calculateCompletionPercentage(taller),
-                isOngoing = isCourseOngoing(taller.startTime, taller.endTime)
+                extraInfo = CollectionExtraInfo(
+                    pillar = taller.pillar,
+                    startTime = taller.startTime.formattedDate(),
+                    endTime = taller.endTime.formattedDate(),
+                    collaboratorFBID = taller.collaboratorFBID,
+                    limit = taller.limit
+                )
             )
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        item {
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Recolectas Activas",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+        }
 
-        Text(
-            text = "Recolectas Activas",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        recolectas.forEach { recolecta ->
+        items(recolectas) { recolecta ->
             CollectionItem(
                 title = "Recolecta - ${recolecta.recollectID}",
                 address = "${recolecta.longitude}, ${recolecta.latitude}",
                 percentage = calculateRecolectaProgress(recolecta),
-                isOngoing = isCourseOngoing(recolecta.startTime, recolecta.endTime)
+                extraInfo = CollectionExtraInfo(
+                    pillar = null,
+                    startTime = recolecta.startTime.formattedDate(),
+                    endTime = recolecta.endTime.formattedDate(),
+                    collaboratorFBID = recolecta.collaboratorFBID,
+                    limit = recolecta.limit
+                )
             )
             Spacer(modifier = Modifier.height(16.dp))
         }
@@ -198,7 +240,20 @@ data class Donation(
 
 
 fun calculateRecolectaProgress(recolecta: getRecolecta): Int {
-    return 75
+    return if (recolecta.limit > 0) {
+        recolecta.donationArray.count() * 100 / recolecta.limit
+    }
+    else {
+        100
+    }
+}
+fun calculateCompletionPercentage(taller: getTaller): Int {
+    return if (taller.limit > 0) {
+        taller.assistantArray.count() * 100 / taller.limit
+    }
+    else {
+        100
+    }
 }
 
 fun fetchData(
@@ -247,17 +302,15 @@ fun fetchData(
     })
 }
 
-
-
 @Composable
-fun SearchBar() {
+fun SearchBar(searchQuery: String, onSearchQueryChange: (String) -> Unit) {
     TextField(
-        value = "Encuentra retos cerca de ti",
-        onValueChange = {},
+        value = searchQuery,
+        onValueChange = onSearchQueryChange,
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp),
-        enabled = false,
+        placeholder = { Text("Encuentra retos cerca de ti") },
         singleLine = true
     )
 }
@@ -268,54 +321,89 @@ data class MarkerInfo(
 )
 
 @Composable
-fun CollectionItem(title: String, address: String, percentage: Int, isOngoing: Boolean) {
+fun CollectionItem(
+    title: String,
+    address: String,
+    percentage: Int,
+    extraInfo: CollectionExtraInfo
+) {
+    var isExpanded by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
+            .padding(vertical = 8.dp)
+            .clickable { isExpanded = !isExpanded },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFFDADADA))
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .padding(16.dp)
         ) {
-            Column {
-                Text(text = title, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(text = address)
-            }
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.size(48.dp)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                CircularProgressIndicator(
-                    progress = percentage / 100f,
-                    color = if (isOngoing) Color.Green else Color.Gray,
-                    strokeWidth = 6.dp
-                )
-                Text(
-                    text = "$percentage%",
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = if (isOngoing) Color.Green else Color.Gray
-                )
+                Column {
+                    Text(text = title, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(text = address)
+                }
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    CircularProgressIndicator(
+                        progress = percentage / 100f,
+                        color = Color.Green,
+                        strokeWidth = 6.dp
+                    )
+                    Text(
+                        text = "$percentage%",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Green
+                    )
+                }
+            }
+
+            if (isExpanded) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Divider(modifier = Modifier.padding(vertical = 4.dp))
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp)
+                        .background(
+                            Color(0xFFDADADA),
+                            shape = RoundedCornerShape(10.dp)
+                        )
+                        .padding(12.dp)
+                ) {
+                    extraInfo.pillar?.let {
+                        Text("Pillar: $it", fontSize = 14.sp)
+                    }
+                    Text("Start: ${extraInfo.startTime}", fontSize = 14.sp)
+                    Text("End: ${extraInfo.endTime}", fontSize = 14.sp)
+                    Text("Collaborator: ${extraInfo.collaboratorFBID}", fontSize = 14.sp)
+                    Text("Limit: ${extraInfo.limit}", fontSize = 14.sp)
+                }
             }
         }
     }
 }
 
-fun calculateCompletionPercentage(taller: getTaller): Int {
-    return 50
-}
-
-fun isCourseOngoing(startTime: Date, endTime: Date): Boolean {
-    val now = Date()
-    return now.after(startTime) && now.before(endTime)
-}
+data class CollectionExtraInfo(
+    val pillar: String?,
+    val startTime: String,
+    val endTime: String,
+    val collaboratorFBID: String,
+    val limit: Int
+)
 
 fun createCustomMarkerBitmap(context: Context, percentage: Int): Bitmap {
     val size = 100
@@ -349,6 +437,11 @@ fun createCustomMarkerBitmap(context: Context, percentage: Int): Bitmap {
     canvas.drawText("$percentage%", radius, radius + textPaint.textSize / 3, textPaint)
 
     return bitmap
+}
+
+fun Date.formattedDate(): String {
+    val formatter = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault())
+    return formatter.format(this)
 }
 
 @Preview(showBackground = true)

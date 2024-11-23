@@ -55,7 +55,6 @@ fun RankingScreen() {
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            SearchBar()
 
             Spacer(modifier = Modifier.height(16.dp))
 
